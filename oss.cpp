@@ -14,7 +14,7 @@
 #include <bits/stdc++.h>
 #include <sys/msg.h>
 #include <string>
-#include <ctime>
+#include <time.h>
 
 using namespace std;
 
@@ -25,18 +25,25 @@ struct simClock{
 
 struct processes{
     int pid;
+    int totalCPUTime;
+    int totalTimeSystem;
+    int lastBurst;
+    int processPrio;
 };
 
 struct mesg_buffer{
     long mesg_type;
     char mesg_text[100];
-    int mesg_index;
     int mesg_pid;
-    char mesg_string[100];
+    int mesg_totalCPUTime;
+    int mesg_totalTimeSystem;
+    int mesg_lastBurst;
+    int mesg_processPrio;
 } message;
 
 int shmidClock;
 int shmidProc;
+
 
 int main(int argc, char* argv[]){
 
@@ -45,6 +52,7 @@ int main(int argc, char* argv[]){
     struct processes *pTable;
     int LEN = 18;
     int size = sizeof(pTable) * LEN;
+
     //Command Line Parsing
     string argNext = "";
     for(int i  = 1; i < argc; i++){
@@ -101,15 +109,26 @@ int main(int argc, char* argv[]){
     //Message Queues
     key_t messageKey = ftok("poggers", 67);
     int msgid;
+
+
     char buffer[50] = "";
-    if(fork() == 0)
-        execl("./user", buffer);
+    //for(int i = 0; i < 1; i++){
+        if(fork() == 0)
+        {
+            pTable[0].pid = getpid();
+            execl("./user", buffer);
+        }
+        pTable[0].processPrio = 1;
+        //cout << pTable[0].pid << " ; oss PID" <<endl;
+    //}
 
     msgid = msgget(messageKey, 0666|IPC_CREAT);
 
     msgrcv(msgid, &message, sizeof(message), 1, 0);
 
     cout << message.mesg_text << endl;
+    cout << "Process Prio: " << message.mesg_processPrio << endl;
+    cout << "PID: " << message.mesg_pid <<endl;
 
     return 0;
 }

@@ -25,14 +25,20 @@ struct simClock{
 
 struct processes{
     int pid;
+    int totalCPUTime;
+    int totalTimeSystem;
+    int lastBurst;
+    int processPrio;
 };
 
 struct mesg_buffer {
     long mesg_type;
     char mesg_text[100];
-    int mesg_index;
     int mesg_pid;
-    char mesg_string[100];
+    int mesg_totalCPUTime;
+    int mesg_totalTimeSystem;
+    int mesg_lastBurst;
+    int mesg_processPrio;
 }message;
 
 int shmidClock;
@@ -41,6 +47,7 @@ int shmidProc;
 int main(int argc, char* argv[]){
     
 
+    //cout << "enter user" <<endl;
     //Variables
     struct simClock *clock;
     struct processes *pTable;
@@ -90,7 +97,9 @@ int main(int argc, char* argv[]){
     //Change values of message queue to send 
     msgid = msgget(messageKey, 0666 | IPC_CREAT);
     message.mesg_type = 1;
-    message.mesg_pid = getpid();
+    //cout << pTable[0].pid << " ; pid" <<endl;
+    message.mesg_pid = pTable[0].pid;
+    message.mesg_processPrio = pTable->processPrio;
 
     strcpy(message.mesg_text, "Data Receieved");
 
