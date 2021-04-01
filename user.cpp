@@ -89,20 +89,17 @@ int main(int argc, char* argv[]){
 
     //Create Message Queue
     int msgid;
-    key_t messageKey;
+    key_t messageKey = ftok("poggies", 65);
     int MAX = 10;
 
-    messageKey = ftok("poggers", 67);
 
     //Change values of message queue to send 
-    msgid = msgget(messageKey, 0666 | IPC_CREAT);
+    msgid = msgget(messageKey, 0666|IPC_CREAT);
     message.mesg_type = 1;
-    //cout << pTable[0].pid << " ; pid" <<endl;
     message.mesg_pid = pTable[0].pid;
-    message.mesg_processPrio = pTable->processPrio;
+    message.mesg_processPrio = pTable[0].processPrio;
 
     strcpy(message.mesg_text, "Data Receieved");
-
     msgsnd(msgid, &message, sizeof(message), 0);
     //shmdt((void *) pTable);
 

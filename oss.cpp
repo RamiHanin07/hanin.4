@@ -106,11 +106,8 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    //Message Queues
-    key_t messageKey = ftok("poggers", 67);
-    int msgid;
 
-
+    int status = 0;
     char buffer[50] = "";
     //for(int i = 0; i < 1; i++){
         if(fork() == 0)
@@ -122,13 +119,16 @@ int main(int argc, char* argv[]){
         //cout << pTable[0].pid << " ; oss PID" <<endl;
     //}
 
-    msgid = msgget(messageKey, 0666|IPC_CREAT);
+    key_t messageKey = ftok("poggies", 65);
+    int msgid;
+    pid_t wpid;
 
-    msgrcv(msgid, &message, sizeof(message), 1, 0);
-
-    cout << message.mesg_text << endl;
-    cout << "Process Prio: " << message.mesg_processPrio << endl;
-    cout << "PID: " << message.mesg_pid <<endl;
-
+    while((wpid = wait(&status)) > 0){
+        msgid = msgget(messageKey, 0666|IPC_CREAT);
+        msgrcv(msgid, &message, sizeof(message), 1, 0);
+        cout << message.mesg_text << endl;
+        cout << "Process Prio: " << message.mesg_processPrio << endl;
+        cout << "PID: " << message.mesg_pid <<endl;
+    }
     return 0;
 }
