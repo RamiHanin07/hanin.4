@@ -51,6 +51,7 @@ int main(int argc, char* argv[]){
     //Variable
     struct simClock *clock;
     struct processes *pTable;
+    struct processes readyQueue[5];
     int LEN = 18;
     int size = sizeof(pTable) * LEN;
 
@@ -74,7 +75,6 @@ int main(int argc, char* argv[]){
             cout << "-l " << argNext << endl;
         }
     }
-
 
     //Shared Memory Creation for System Clock (Seconds)
     int sizeMem = 1024;
@@ -107,16 +107,21 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
+    ofstream log("log.out");
 
     int status = 0;
     char buffer[50] = "";
-    //for(int i = 0; i < 1; i++){
+    for(int i = 0; i < 4; i++){
         if(fork() == 0)
         {
             pTable[0].pid = getpid();
             execl("./user", buffer);
         }
+        log << "OSS: Generating process with PID " << pTable[0].pid << "and putting it in queue 0" << endl;
         pTable[0].processPrio = 1;
+
+        readyQueue[0] = pTable[0];
+        log << "OSS: Process " << pTable[0].pid << " has entered ready queue" << endl;
         //cout << pTable[0].pid << " ; oss PID" <<endl;
     //}
     
@@ -129,7 +134,7 @@ int main(int argc, char* argv[]){
     message.mesg_type = 1;
     message.mesg_timeQuant = 50;
     
-
+    
     msgsnd(msgidTwo, &message, sizeof(message), 0);
     
     pid_t wpid;
@@ -140,6 +145,7 @@ int main(int argc, char* argv[]){
         cout << message.mesg_text << endl;
         cout << "Process Prio: " << message.mesg_processPrio << endl;
         cout << "PID: " << message.mesg_pid <<endl;
+    }
     }
     return 0;
 }

@@ -113,6 +113,7 @@ int main(int argc, char* argv[]){
 
     strcpy(message.mesg_text, "Data Receieved");
     msgsnd(msgid, &message, sizeof(message), 0);
+    cout << "Complete" << endl;
     //shmdt((void *) pTable);
 
 
