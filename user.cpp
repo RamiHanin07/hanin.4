@@ -39,6 +39,7 @@ struct mesg_buffer {
     int mesg_totalTimeSystem;
     int mesg_lastBurst;
     int mesg_processPrio;
+    int mesg_timeQuant;
 }message;
 
 int shmidClock;
@@ -89,12 +90,23 @@ int main(int argc, char* argv[]){
 
     //Create Message Queue
     int msgid;
+    int msgidTwo;
     key_t messageKey = ftok("poggies", 65);
+    key_t messageKeyTwo = ftok("homies",65);
     int MAX = 10;
+
+    
 
 
     //Change values of message queue to send 
     msgid = msgget(messageKey, 0666|IPC_CREAT);
+    msgidTwo = msgget(messageKeyTwo, 0666|IPC_CREAT);
+
+    msgrcv(msgidTwo, &message, sizeof(message), 1, 0);
+
+    cout << "Time Quant: " << message.mesg_timeQuant << endl;
+
+
     message.mesg_type = 1;
     message.mesg_pid = pTable[0].pid;
     message.mesg_processPrio = pTable[0].processPrio;

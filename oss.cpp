@@ -39,6 +39,7 @@ struct mesg_buffer{
     int mesg_totalTimeSystem;
     int mesg_lastBurst;
     int mesg_processPrio;
+    int mesg_timeQuant;
 } message;
 
 int shmidClock;
@@ -118,13 +119,23 @@ int main(int argc, char* argv[]){
         pTable[0].processPrio = 1;
         //cout << pTable[0].pid << " ; oss PID" <<endl;
     //}
-
-    key_t messageKey = ftok("poggies", 65);
+    
     int msgid;
+    int msgidTwo;
+    key_t messageKey = ftok("poggies", 65);
+    key_t messageKeyTwo = ftok("homies",65);
+    msgid = msgget(messageKey, 0666|IPC_CREAT);
+    msgidTwo = msgget(messageKeyTwo, 0666|IPC_CREAT); 
+    message.mesg_type = 1;
+    message.mesg_timeQuant = 50;
+    
+
+    msgsnd(msgidTwo, &message, sizeof(message), 0);
+    
     pid_t wpid;
 
     while((wpid = wait(&status)) > 0){
-        msgid = msgget(messageKey, 0666|IPC_CREAT);
+        
         msgrcv(msgid, &message, sizeof(message), 1, 0);
         cout << message.mesg_text << endl;
         cout << "Process Prio: " << message.mesg_processPrio << endl;
