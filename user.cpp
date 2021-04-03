@@ -102,16 +102,26 @@ int main(int argc, char* argv[]){
     msgid = msgget(messageKey, 0666|IPC_CREAT);
     msgidTwo = msgget(messageKeyTwo, 0666|IPC_CREAT);
 
-    msgrcv(msgidTwo, &message, sizeof(message), 1, 0);
+    message.mesg_type = getpid();
+
+    cout << getpid() << " user pid" <<endl;
+
+    ofstream log("log.out", ios::app);
+
+    msgrcv(msgidTwo, &message, sizeof(message), message.mesg_type, 0);
+
+    log << "User: Process " << getpid() << " has started working \n";
 
     cout << "Time Quant: " << message.mesg_timeQuant << endl;
 
 
     message.mesg_type = 1;
-    message.mesg_pid = pTable[0].pid;
+    message.mesg_pid = getpid();
     message.mesg_processPrio = pTable[0].processPrio;
 
     strcpy(message.mesg_text, "Data Receieved");
+
+    log << "User: Process " << getpid() << " has stopped working \n";
     msgsnd(msgid, &message, sizeof(message), 0);
     cout << "Complete" << endl;
     //shmdt((void *) pTable);

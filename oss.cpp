@@ -52,6 +52,7 @@ int main(int argc, char* argv[]){
     struct simClock *clock;
     struct processes *pTable;
     struct processes readyQueue[5];
+    struct processes blockedQueue[5];
     int LEN = 18;
     int size = sizeof(pTable) * LEN;
 
@@ -107,45 +108,70 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    ofstream log("log.out");
-
+    
+    
     int status = 0;
     char buffer[50] = "";
-    for(int i = 0; i < 4; i++){
-        if(fork() == 0)
-        {
-            pTable[0].pid = getpid();
-            execl("./user", buffer);
-        }
-        log << "OSS: Generating process with PID " << pTable[0].pid << "and putting it in queue 0" << endl;
-        pTable[0].processPrio = 1;
 
-        readyQueue[0] = pTable[0];
-        log << "OSS: Process " << pTable[0].pid << " has entered ready queue" << endl;
-        //cout << pTable[0].pid << " ; oss PID" <<endl;
-    //}
-    
     int msgid;
     int msgidTwo;
     key_t messageKey = ftok("poggies", 65);
     key_t messageKeyTwo = ftok("homies",65);
     msgid = msgget(messageKey, 0666|IPC_CREAT);
     msgidTwo = msgget(messageKeyTwo, 0666|IPC_CREAT); 
-    message.mesg_type = 1;
+
+    //for(int i = 0; i < 4; i++){
+        if(fork() == 0)
+        {
+            pTable[0].pid = getpid();
+            cout << pTable[0].pid << " child pTable Pid" <<endl;
+            
+            cout << getpid() << " child getpid() pid" <<endl;
+            execl("./user", buffer);
+        }
+
+    ofstream log("log.out");
+    log << "OSS: Generating process with PID " << pTable[0].pid << "\n";
+    log.close();
+    sleep(1); //This needs to be fixed, but we can leave it for now.
+    pTable[0].processPrio = 1;
+        
+        
+    //cout << pTable[0].pid << " ; oss PID" <<endl;
+    
+    
+    
+    
     message.mesg_timeQuant = 50;
     
+    readyQueue[0].pid = pTable[0].pid;
+    cout << readyQueue[0].pid << " rq pid" <<endl;
+    cout << pTable[0].pid << " pt pid" <<endl;
+
+    message.mesg_type = readyQueue[0].pid;
+    log.open("log.out", ios::app);
+    log << "OSS: Process " << pTable[0].pid << " has entered ready queue \n";
+    log.close();
     
     msgsnd(msgidTwo, &message, sizeof(message), 0);
+    log.open("log.out",ios::app);
+    log << "OSS: Process " << readyQueue[0].pid << " has been removed from ready queue \n";
+    log.close();
+    readyQueue[0].pid = -1;
+    
+    
     
     pid_t wpid;
 
-    while((wpid = wait(&status)) > 0){
+    //while((wpid = wait(&status)) > 0){
         
         msgrcv(msgid, &message, sizeof(message), 1, 0);
         cout << message.mesg_text << endl;
         cout << "Process Prio: " << message.mesg_processPrio << endl;
         cout << "PID: " << message.mesg_pid <<endl;
-    }
-    }
+    //}
+    //}
+
+    msgctl(msgid, IPC_RMID, NULL);
     return 0;
 }
