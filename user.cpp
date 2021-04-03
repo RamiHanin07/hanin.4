@@ -96,6 +96,7 @@ int main(int argc, char* argv[]){
     int MAX = 10;
 
 
+
     //Change values of message queue to send 
     msgid = msgget(messageKey, 0666|IPC_CREAT);
     msgidTwo = msgget(messageKeyTwo, 0666|IPC_CREAT);

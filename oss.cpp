@@ -172,7 +172,7 @@ int main(int argc, char* argv[]){
     readyQueue[0].pid = pTable[0].pid;
     //cout << readyQueue[0].pid << " rq pid" <<endl;
     //cout << pTable[0].pid << " pt pid" <<endl;
-    
+
     message.mesg_timeQuant = 50;
     message.mesg_type = readyQueue[0].pid;
     log.open("log.out", ios::app);
@@ -185,6 +185,7 @@ int main(int argc, char* argv[]){
     log.close();
     readyQueue[0].pid = -1;
     
+
 
     pid_t wpid;
 
