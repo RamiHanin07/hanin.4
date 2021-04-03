@@ -40,13 +40,13 @@ struct mesg_buffer {
     int mesg_lastBurst;
     int mesg_processPrio;
     int mesg_timeQuant;
+    int mesg_timeUsed;
 }message;
 
 int shmidClock;
 int shmidProc;
 
 int main(int argc, char* argv[]){
-    
 
     //cout << "enter user" <<endl;
     //Variables
@@ -95,8 +95,6 @@ int main(int argc, char* argv[]){
     key_t messageKeyTwo = ftok("homies",65);
     int MAX = 10;
 
-    
-
 
     //Change values of message queue to send 
     msgid = msgget(messageKey, 0666|IPC_CREAT);
@@ -118,12 +116,12 @@ int main(int argc, char* argv[]){
     message.mesg_type = 1;
     message.mesg_pid = getpid();
     message.mesg_processPrio = pTable[0].processPrio;
+    message.mesg_timeUsed = 50;
 
     strcpy(message.mesg_text, "Data Receieved");
 
     log << "User: Process " << getpid() << " has stopped working \n";
     msgsnd(msgid, &message, sizeof(message), 0);
-    cout << "Complete" << endl;
     //shmdt((void *) pTable);
 
 

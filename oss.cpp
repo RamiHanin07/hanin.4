@@ -40,6 +40,7 @@ struct mesg_buffer{
     int mesg_lastBurst;
     int mesg_processPrio;
     int mesg_timeQuant;
+    int mesg_timeUsed;
 } message;
 
 int shmidClock;
@@ -140,8 +141,6 @@ int main(int argc, char* argv[]){
     //cout << pTable[0].pid << " ; oss PID" <<endl;
     
     
-    
-    
     message.mesg_timeQuant = 50;
     
     readyQueue[0].pid = pTable[0].pid;
@@ -159,8 +158,7 @@ int main(int argc, char* argv[]){
     log.close();
     readyQueue[0].pid = -1;
     
-    
-    
+
     pid_t wpid;
 
     //while((wpid = wait(&status)) > 0){
@@ -169,9 +167,23 @@ int main(int argc, char* argv[]){
         cout << message.mesg_text << endl;
         cout << "Process Prio: " << message.mesg_processPrio << endl;
         cout << "PID: " << message.mesg_pid <<endl;
+        
+        clock->clockNano+= message.mesg_timeUsed;
+        while(clock->clockNano >= 100){
+            clock->clockNano-= 100;
+            clock->clockSec+= 1;
+        }
+
+        cout << clock->clockNano << "time passed" <<endl;
+        cout << clock->clockSec << " time passed sec" <<endl;
     //}
     //}
 
     msgctl(msgid, IPC_RMID, NULL);
+    shmctl(shmidClock, IPC_RMID, NULL);
+    shmctl(shmidProc, IPC_RMID, NULL);
+
     return 0;
 }
+
+
