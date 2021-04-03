@@ -57,6 +57,8 @@ int main(int argc, char* argv[]){
     int LEN = 18;
     int size = sizeof(pTable) * LEN;
 
+    srand(time(NULL));
+
     //Command Line Parsing
     string argNext = "";
     for(int i  = 1; i < argc; i++){
@@ -121,6 +123,19 @@ int main(int argc, char* argv[]){
     msgid = msgget(messageKey, 0666|IPC_CREAT);
     msgidTwo = msgget(messageKeyTwo, 0666|IPC_CREAT); 
 
+    const int maxTimeBetweenNewProcsNS = 100;
+    const int maxTimeBetweenNecProcsSecs = 1;
+
+    //Randomly do a new process
+    int interval = rand()%((maxTimeBetweenNewProcsNS - 1)+1);
+    clock->clockNano+= interval;
+    while(clock->clockNano >= 100){
+        clock->clockNano-= 100;
+        clock->clockSec+= 1;
+    };
+
+    
+
     //for(int i = 0; i < 4; i++){
         if(fork() == 0)
         {
@@ -132,7 +147,7 @@ int main(int argc, char* argv[]){
         }
 
     ofstream log("log.out");
-    log << "OSS: Generating process with PID " << pTable[0].pid << "\n";
+    log << "OSS: Generating process with PID " << pTable[0].pid << " at time: " << clock->clockNano << " ns : " << clock->clockSec << "s \n";
     log.close();
     sleep(1); //This needs to be fixed, but we can leave it for now.
     pTable[0].processPrio = 1;
@@ -141,12 +156,24 @@ int main(int argc, char* argv[]){
     //cout << pTable[0].pid << " ; oss PID" <<endl;
     
     
-    message.mesg_timeQuant = 50;
     
-    readyQueue[0].pid = pTable[0].pid;
-    cout << readyQueue[0].pid << " rq pid" <<endl;
-    cout << pTable[0].pid << " pt pid" <<endl;
+    
+    //Randomly increase time by small amount for doing ready queue
 
+    const int maxSystemTimeSpent = 15;
+    interval = rand()%((maxSystemTimeSpent - 1)+1);
+    clock->clockNano+= interval;
+    while(clock->clockNano >= 100){
+        clock->clockNano-= 100;
+        clock->clockSec+= 1;
+    };
+
+    //Do ready Queue
+    readyQueue[0].pid = pTable[0].pid;
+    //cout << readyQueue[0].pid << " rq pid" <<endl;
+    //cout << pTable[0].pid << " pt pid" <<endl;
+    
+    message.mesg_timeQuant = 50;
     message.mesg_type = readyQueue[0].pid;
     log.open("log.out", ios::app);
     log << "OSS: Process " << pTable[0].pid << " has entered ready queue \n";
@@ -172,7 +199,7 @@ int main(int argc, char* argv[]){
         while(clock->clockNano >= 100){
             clock->clockNano-= 100;
             clock->clockSec+= 1;
-        }
+        };
 
         cout << clock->clockNano << "time passed" <<endl;
         cout << clock->clockSec << " time passed sec" <<endl;
