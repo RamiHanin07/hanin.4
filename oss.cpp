@@ -250,8 +250,9 @@ int main(int argc, char* argv[]){
                 cout << pTable[i].pid << " pTablepid: " << i << endl;
             }
 
+
+            //Fills Ready Queue with Processes
             for(int i = 0 ; i < 18; i++){
-                //cout << readyQueue[i].pid << " rqPid: " << i << endl;
                 readyQueue[i].pid = pTable[i].pid;
                 interval = rand()%((maxSystemTimeSpent - 1)+1);
                 clock->clockNano+= interval;
@@ -279,28 +280,39 @@ int main(int argc, char* argv[]){
 
             message.mesg_timeQuant = 50;
 
+            //Handles Ready Queue Checks
+
             for(int i = 0; i < 18; i++){
                 if(readyQueue[i].pid != -1){
                     message.mesg_type = readyQueue[i].pid;
                     message.mesg_rqIndex = i;
-                    i = 18;
+                    for(int j = 0; j < 18; j++){
+                        if(pTable[j].pid = readyQueue[i].pid){
+                            if(pTable[i].typeOfSystem == true)
+                                message.mesg_typeOfSystem = true;
+                            else
+                            message.mesg_typeOfSystem = false;
+                            j = 18;
+                        }
+                    }
+
+                log.open("log.out",ios::app);
+                log << "OSS: Process " << readyQueue[i].pid << " has been removed from ready queue \n";
+                log.close();
+                readyQueue[i].pid = -1;
+                i = 18;
                 }
             }
-            //message.mesg_type = readyQueue[0].pid;
-            //log.open("log.out", ios::app);
-            //log << "OSS: Process " << readyQueue[0] << " has entered ready queue \n";
-            //log.close();
             
-            if(pTable[0].typeOfSystem == true)
-                message.mesg_typeOfSystem = true;
-            else
-                message.mesg_typeOfSystem = false;
+
+            //if(pTable[0].typeOfSystem == true)
+                //message.mesg_typeOfSystem = true;
+            //else
+                //message.mesg_typeOfSystem = false;
 
             msgsnd(msgidTwo, &message, sizeof(message), 0);
-            log.open("log.out",ios::app);
-            log << "OSS: Process " << readyQueue[0].pid << " has been removed from ready queue \n";
-            log.close();
-            readyQueue[0].pid = -1;
+            
+            
             
 
 
@@ -340,7 +352,12 @@ int main(int argc, char* argv[]){
                         cout << "Process Prio: " << message.mesg_processPrio << endl;
                         cout << "PID: " << message.mesg_pid <<endl;
                         //Remove process from process queue
-
+                        for(int i = 0 ; i < 18; i++){
+                            if(pTable[i].pid == message.mesg_pid){
+                                pTable[i].pid = -1;
+                                i = 18;
+                            }
+                        }
                     }
                 }
                 
@@ -360,8 +377,8 @@ int main(int argc, char* argv[]){
 
         //}while(processesOpen != 18);
 
-        cout << clock->clockNano << "time passed" <<endl;
-        cout << clock->clockSec << " time passed sec" <<endl;
+        //cout << clock->clockNano << "time passed" <<endl;
+        //cout << clock->clockSec << " time passed sec" <<endl;
     //}
     //}
 
