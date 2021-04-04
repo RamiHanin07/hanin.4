@@ -73,6 +73,7 @@ int main(int argc, char* argv[]){
     ofstream log("log.out");
     log.close();
     srand(time(NULL));
+    int readyQueueOpen = 0;
 
     //Command Line Parsing
     string argNext = "";
@@ -141,6 +142,7 @@ int main(int argc, char* argv[]){
         readyQueue[i].pid = -1;
         blockedQueue[i].pid = -1;
         pTable[i].pid = -1;
+        blockedQueue[i].unblocked = false;
     }
 
     
@@ -171,24 +173,7 @@ int main(int argc, char* argv[]){
 
         //do{
             //cout << "Start Do" <<endl;
-            //Checks the blocked queue, if an index in the blocked queue is ready to be unblocked, set it to unblocked. 
-            for(int i = 0; i < 18 ; i++){
-                if(blockedQueue[i].blockRestartSec < clock->clockSec || (blockedQueue[i].blockRestartSec = clock->clockSec && blockedQueue[i].blockRestartNS > clock->clockNano)){
-                    blockedQueue[i].unblocked = true;
-                }
-            }
-            //The first index in the blocked queue that is unblocked will be moved to the first available ready queue position.
-            for(int i = 0; i < 18; i++){
-                if(blockedQueue[i].unblocked = true){
-                    for(int j = 0; j < 18; j++){
-                        if(readyQueue[j].pid = -1){
-                            readyQueue[j].pid = blockedQueue[i].pid;
-                            j = 18;
-                        }
-                    }
-                i = 18;
-                }   
-            }
+            //Checks the blocked queue, if an index in the blocked queue is ready to be unblocked, set it to unblocked.
 
             //cout << "Gen Process" << endl;
             //Generate a new process if processTable isn't empty
@@ -338,14 +323,19 @@ int main(int argc, char* argv[]){
                     if(message.mesg_blocked == true){
                         cout << "Process " << message.mesg_pid << " blocked" <<endl;
                         //Add blocked process to blocked queue
-                        blockedQueue[0].pid = message.mesg_pid;
-                        blockedQueue[0].blockRestartSec = clock->clockSec + message.mesg_unblockSec;
-                        blockedQueue[0].blockRestartNS = clock->clockNano + message.mesg_unblockNS;
-                        log.open("log.out",ios::app);
-                        log << "OSS: Process " << blockedQueue[0].pid << " has been added to blocked queue at index: 0" <<endl;
-                        cout << blockedQueue[0].blockRestartSec << " ; time to restart sec" <<endl;
-                        cout << blockedQueue[0].blockRestartNS << " ; time to restart ns" <<endl;
-                        log.close();
+                        for(int i = 0; i < 18; i++){
+                            if(blockedQueue[i].pid == -1){
+                                blockedQueue[i].pid = message.mesg_pid;
+                                blockedQueue[i].blockRestartSec = clock->clockSec + message.mesg_unblockSec;
+                                blockedQueue[i].blockRestartNS = clock->clockNano + message.mesg_unblockNS;
+                                log.open("log.out",ios::app);
+                                log << "OSS: Process " << blockedQueue[0].pid << " has been added to blocked queue at index: 0" <<endl;
+                                log.close();
+                                i = 18;
+                            }
+                            
+                        }
+                        
                     }
                     else{
                         cout << message.mesg_text << endl;
@@ -373,6 +363,54 @@ int main(int argc, char* argv[]){
                 }
 
                 cout << processesOpen << " processesOpen" <<endl;
+
+                for(int i = 0; i < 18; i++){
+                    if(readyQueue[i].pid == -1)
+                        readyQueueOpen++;
+                }
+
+                cout << readyQueueOpen << " readyQueueOpen" << endl;
+
+                readyQueueOpen = 0;
+
+
+
+                for(int i = 0; i < 18 ; i++){
+                    if(blockedQueue[i].pid != -1){
+                        if(blockedQueue[i].blockRestartSec < clock->clockSec || (blockedQueue[i].blockRestartSec = clock->clockSec && blockedQueue[i].blockRestartNS > clock->clockNano)){
+                            blockedQueue[i].unblocked = true;
+                            cout << clock->clockNano << "time passed" <<endl;
+                            cout << clock->clockSec << " time passed sec" <<endl;
+                            cout << blockedQueue[i].blockRestartSec << " ; time to restart sec" <<endl;
+                            cout << blockedQueue[i].blockRestartNS << " ; time to restart ns" <<endl;
+                        }
+                    }
+                }
+                
+                //The first index in the blocked queue that is unblocked will be moved to the first available ready queue position.
+                for(int i = 0; i < 18; i++){
+                    if(blockedQueue[i].unblocked == true){
+                        cout << "unblocked " << i << endl;
+                        for(int j = 0; j < 18; j++){
+                            if(readyQueue[j].pid = -1){
+                                readyQueue[j].pid = blockedQueue[i].pid;
+                                j = 18;
+                                blockedQueue[i].pid = -1;
+                                blockedQueue[i].unblocked = false;
+                            }
+                        }
+                    i = 18;
+                    }   
+                }
+
+                for(int i = 0; i < 18; i++){
+                    if(readyQueue[i].pid == -1)
+                        readyQueueOpen++;
+                }
+
+                cout << readyQueueOpen << " readyQueueOpen" << endl;
+
+                readyQueueOpen = 0;
 
 
         //}while(processesOpen != 18);
