@@ -29,6 +29,10 @@ struct processes{
     int totalTimeSystem;
     int lastBurst;
     int processPrio;
+    bool typeOfSystem;
+    int blockRestartSec;
+    int blockRestartNS;
+    bool unblocked;
 };
 
 struct mesg_buffer{
@@ -41,6 +45,11 @@ struct mesg_buffer{
     int mesg_processPrio;
     int mesg_timeQuant;
     int mesg_timeUsed;
+    bool mesg_terminated;
+    bool mesg_typeOfSystem;
+    bool mesg_blocked;
+    int mesg_unblockNS;
+    int mesg_unblockSec;
 } message;
 
 int shmidClock;
@@ -52,10 +61,13 @@ int main(int argc, char* argv[]){
     //Variable
     struct simClock *clock;
     struct processes *pTable;
-    struct processes readyQueue[5];
-    struct processes blockedQueue[5];
+    struct processes readyQueue[20];
+    struct processes blockedQueue[20];
+    const int billion = 1000000000;
     int LEN = 18;
     int size = sizeof(pTable) * LEN;
+    int processesOpen = 0;
+    int totalCreated = 0;
 
     srand(time(NULL));
 
@@ -80,6 +92,9 @@ int main(int argc, char* argv[]){
         }
     }
 
+    //Initialize ready queue, blocked queue, and ptable queue to empty pid identifier.
+    
+
     //Shared Memory Creation for System Clock (Seconds)
     int sizeMem = 1024;
     key_t keyClock = 786575;
@@ -99,7 +114,7 @@ int main(int argc, char* argv[]){
     //Shared Memory Creation for Process Table 
     key_t keyProc = 76589;
 
-    shmidProc = shmget(keyProc, size, 0644|IPC_CREAT);
+    shmidProc = shmget(keyProc, sizeof(struct processes), 0644|IPC_CREAT);
     if (shmidProc == -1) {
         perror("Shared memory");
         return 1;
@@ -107,8 +122,22 @@ int main(int argc, char* argv[]){
 
     pTable = (processes*)shmat(shmidProc,NULL,0);
     if(pTable == (void*) -1){
-        perror("Shared memory attach");
-        return 1;
+        //perror("Shared memory attach");
+        //return 1;
+    }
+
+    //for(int i = 0; i < 18; i++){
+        //pTable[i] = (processes*)shmat(shmidProc,NULL,0);
+        //if(pTable == (void*) -1){
+            //perror("Shared memory attach");
+        //return 1;
+    //}
+    //}
+
+    for(int i = 0; i < 18; i++){
+        readyQueue[i].pid = -1;
+        blockedQueue[i].pid = -1;
+        pTable[i].pid = -1;
     }
 
     
@@ -118,89 +147,194 @@ int main(int argc, char* argv[]){
 
     int msgid;
     int msgidTwo;
-    key_t messageKey = ftok("poggies", 65);
+    key_t messageKey = ftok("poggers", 65);
     key_t messageKeyTwo = ftok("homies",65);
     msgid = msgget(messageKey, 0666|IPC_CREAT);
     msgidTwo = msgget(messageKeyTwo, 0666|IPC_CREAT); 
 
     const int maxTimeBetweenNewProcsNS = 100;
     const int maxTimeBetweenNecProcsSecs = 1;
+    const int outofOneHund = 100;
 
     //Randomly do a new process
     int interval = rand()%((maxTimeBetweenNewProcsNS - 1)+1);
     clock->clockNano+= interval;
-    while(clock->clockNano >= 100){
-        clock->clockNano-= 100;
+    while(clock->clockNano >= billion){
+        clock->clockNano-= billion;
         clock->clockSec+= 1;
     };
 
-    
+    int typeOfSystemNum = rand()%((outofOneHund - 1)+1);
 
-    //for(int i = 0; i < 4; i++){
-        if(fork() == 0)
-        {
-            pTable[0].pid = getpid();
-            cout << pTable[0].pid << " child pTable Pid" <<endl;
+        //do{
+            //cout << "Start Do" <<endl;
+            //Checks the blocked queue, if an index in the blocked queue is ready to be unblocked, set it to unblocked. 
+            for(int i = 0; i < 18 ; i++){
+                if(blockedQueue[i].blockRestartSec < clock->clockSec || (blockedQueue[i].blockRestartSec = clock->clockSec && blockedQueue[i].blockRestartNS > clock->clockNano)){
+                    blockedQueue[i].unblocked = true;
+                }
+            }
+            //The first index in the blocked queue that is unblocked will be moved to the first available ready queue position.
+            for(int i = 0; i < 18; i++){
+                if(blockedQueue[i].unblocked = true){
+                    for(int j = 0; j < 18; j++){
+                        if(readyQueue[j].pid = -1){
+                            readyQueue[j].pid = blockedQueue[i].pid;
+                            j = 18;
+                        }
+                    }
+                i = 18;
+                }   
+            }
+
+            //cout << "Gen Process" << endl;
+            //Generate a new process if processTable isn't empty
+
+            for(int i = 0; i < 18; i++){
+                cout << "Enter For" << endl;
+                cout << pTable[i].pid << " pTablepid" << endl;
+                if(pTable[i].pid == -1 && totalCreated != 100){
+                    cout << "Enter if Pid" << endl;
+                    totalCreated++;
+                    cout << totalCreated << " ; total created" <<endl;
+                    if(fork() == 0){
+                        cout << "Enter Fork" <<endl;
+                        typeOfSystemNum = rand()%((outofOneHund - 1)+1);
+                        pTable[i].pid = getpid();
+                        cout << endl;
+                        //cout << pTable[i].pid << " child pTable Pid" <<endl;
+                        if(typeOfSystemNum >=51){
+                            pTable[i].typeOfSystem = true;
+                        }
+                        else{
+                            pTable[i].typeOfSystem = false;
+                        }
+                        //cout << getpid() << " child getpid() pid" <<endl;
+
+                        for(int j = 0 ; j < 18; j++){
+                            if(readyQueue[j].pid == -1){
+                                readyQueue[j].pid = pTable[i].pid;
+                                cout << readyQueue[j].pid << " RQ PID WITHN FOR" << endl;
+                                j = 18;
+                            }
+                        }
+                        execl("./user", buffer);
+                    }
+                }
+            }
+
             
-            cout << getpid() << " child getpid() pid" <<endl;
-            execl("./user", buffer);
-        }
 
-    ofstream log("log.out");
-    log << "OSS: Generating process with PID " << pTable[0].pid << " at time: " << clock->clockNano << " ns : " << clock->clockSec << "s \n";
-    log.close();
-    sleep(1); //This needs to be fixed, but we can leave it for now.
-    pTable[0].processPrio = 1;
-        
-        
-    //cout << pTable[0].pid << " ; oss PID" <<endl;
-    
-    
-    
-    
-    //Randomly increase time by small amount for doing ready queue
+            //cout << "Log to File" << endl;
+            ofstream log("log.out");
+            log << "OSS: Generating process with PID " << pTable[0].pid << " at time: " << clock->clockNano << " ns : " << clock->clockSec << "s \n";
+            log.close();
+            sleep(1); //This needs to be fixed, but we can leave it for now.
+            pTable[0].processPrio = 1;
 
-    const int maxSystemTimeSpent = 15;
-    interval = rand()%((maxSystemTimeSpent - 1)+1);
-    clock->clockNano+= interval;
-    while(clock->clockNano >= 100){
-        clock->clockNano-= 100;
-        clock->clockSec+= 1;
-    };
+            for(int i = 0; i < 18; i++){
+                cout << pTable[i].pid << " pTablepid: " << i << endl;
+            }
+                
+                
+            //cout << pTable[0].pid << " ; oss PID" <<endl;
+            
+            
+            
+            
+            //Randomly increase time by small amount for doing ready queue
 
-    //Do ready Queue
-    readyQueue[0].pid = pTable[0].pid;
-    //cout << readyQueue[0].pid << " rq pid" <<endl;
-    //cout << pTable[0].pid << " pt pid" <<endl;
+            const int maxSystemTimeSpent = 15;
+            interval = rand()%((maxSystemTimeSpent - 1)+1);
+            clock->clockNano+= interval;
+            while(clock->clockNano >= billion){
+                clock->clockNano-= billion;
+                clock->clockSec+= 1;
+            };
 
-    message.mesg_timeQuant = 50;
-    message.mesg_type = readyQueue[0].pid;
-    log.open("log.out", ios::app);
-    log << "OSS: Process " << pTable[0].pid << " has entered ready queue \n";
-    log.close();
-    
-    msgsnd(msgidTwo, &message, sizeof(message), 0);
-    log.open("log.out",ios::app);
-    log << "OSS: Process " << readyQueue[0].pid << " has been removed from ready queue \n";
-    log.close();
-    readyQueue[0].pid = -1;
-    
+            //Do ready Queue
+            //for(int i = 0; i < 18; i++){
+                //cout << readyQueue[i].pid << " READY QUEUE WITHIN RQ" <<endl;
+                //if(readyQueue[0].pid = -1){
+                    
+                //}
+            //}
+            readyQueue[0].pid = pTable[0].pid;
+
+            message.mesg_timeQuant = 50;
+            message.mesg_type = readyQueue[0].pid;
+            log.open("log.out", ios::app);
+            log << "OSS: Process " << pTable[0].pid << " has entered ready queue \n";
+            log.close();
+            
+            if(pTable[0].typeOfSystem == true)
+                message.mesg_typeOfSystem = true;
+            else
+                message.mesg_typeOfSystem = false;
+
+            msgsnd(msgidTwo, &message, sizeof(message), 0);
+            log.open("log.out",ios::app);
+            log << "OSS: Process " << readyQueue[0].pid << " has been removed from ready queue \n";
+            log.close();
+            readyQueue[0].pid = -1;
+            
 
 
-    pid_t wpid;
+            pid_t wpid;
 
-    //while((wpid = wait(&status)) > 0){
-        
-        msgrcv(msgid, &message, sizeof(message), 1, 0);
-        cout << message.mesg_text << endl;
-        cout << "Process Prio: " << message.mesg_processPrio << endl;
-        cout << "PID: " << message.mesg_pid <<endl;
-        
-        clock->clockNano+= message.mesg_timeUsed;
-        while(clock->clockNano >= 100){
-            clock->clockNano-= 100;
-            clock->clockSec+= 1;
-        };
+            //while((wpid = wait(&status)) > 0){
+                msgrcv(msgid, &message, sizeof(message), 2, 0);
+                if(message.mesg_terminated == true){
+                    cout << "Process " << message.mesg_pid << " terminated" <<endl;
+                    //Remove the terminated process from process list.
+                    for(int i = 0; i < 18; i++){
+                        if(pTable[i].pid = message.mesg_pid){
+                            pTable[i].pid = -1;
+                            i = 18;
+                        }
+                    }
+                    //Log the process removal
+                    log.open("log.out",ios::app);
+                    log << "OSS: Process " << message.mesg_pid << " has been removed from available processes" << endl;
+                    log.close();
+                }
+                else{
+                    if(message.mesg_blocked == true){
+                        cout << "Process " << message.mesg_pid << " blocked" <<endl;
+                        //Add blocked process to blocked queue
+                        blockedQueue[0].pid = message.mesg_pid;
+                        blockedQueue[0].blockRestartSec = clock->clockSec + message.mesg_unblockSec;
+                        blockedQueue[0].blockRestartNS = clock->clockNano + message.mesg_unblockNS;
+                        log.open("log.out",ios::app);
+                        log << "OSS: Process " << blockedQueue[0].pid << " has been added to blocked queue at index: 0" <<endl;
+                        cout << blockedQueue[0].blockRestartSec << " ; time to restart sec" <<endl;
+                        cout << blockedQueue[0].blockRestartNS << " ; time to restart ns" <<endl;
+                        log.close();
+                    }
+                    else{
+                        cout << message.mesg_text << endl;
+                        cout << "Process Prio: " << message.mesg_processPrio << endl;
+                        cout << "PID: " << message.mesg_pid <<endl;
+                        //Remove process from process queue
+
+                    }
+                }
+                
+                clock->clockNano+= message.mesg_timeUsed;
+                while(clock->clockNano >= billion){
+                    clock->clockNano-= billion;
+                    clock->clockSec+= 1;
+                };
+                processesOpen = 0;
+                for(int i = 0; i < 18; i++){
+                    if(pTable[i].pid == -1)
+                        processesOpen++;
+                }
+
+                cout << processesOpen << " processesOpen" <<endl;
+
+
+        //}while(processesOpen != 18);
 
         cout << clock->clockNano << "time passed" <<endl;
         cout << clock->clockSec << " time passed sec" <<endl;
@@ -208,6 +342,7 @@ int main(int argc, char* argv[]){
     //}
 
     msgctl(msgid, IPC_RMID, NULL);
+    msgctl(msgidTwo, IPC_RMID,NULL);
     shmctl(shmidClock, IPC_RMID, NULL);
     shmctl(shmidProc, IPC_RMID, NULL);
 
