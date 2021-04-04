@@ -50,6 +50,7 @@ struct mesg_buffer{
     bool mesg_blocked;
     int mesg_unblockNS;
     int mesg_unblockSec;
+    int mesg_rqIndex;
 } message;
 
 int shmidClock;
@@ -63,6 +64,7 @@ int main(int argc, char* argv[]){
     struct processes *pTable;
     struct processes readyQueue[20];
     struct processes blockedQueue[20];
+    const int maxSystemTimeSpent = 15;
     const int billion = 1000000000;
     int LEN = 18;
     int size = sizeof(pTable) * LEN;
@@ -208,7 +210,7 @@ int main(int argc, char* argv[]){
                             clock->clockSec+= 1;
                         };
                         log.open("log.out",ios::app);
-                        log << "OSS: Generating process with PID " << getpid() << " at time: " << clock->clockNano << " ns : " << clock->clockSec << "s \n";
+                        log << "OSS: Generating process with PID " << getpid() << " at time: " << clock->clockSec << " s : " << clock->clockNano << "ns \n";
                         log.close();
                         //cout << "Enter Fork" <<endl;
                         typeOfSystemNum = rand()%((outofOneHund - 1)+1);
@@ -251,6 +253,15 @@ int main(int argc, char* argv[]){
             for(int i = 0 ; i < 18; i++){
                 //cout << readyQueue[i].pid << " rqPid: " << i << endl;
                 readyQueue[i].pid = pTable[i].pid;
+                interval = rand()%((maxSystemTimeSpent - 1)+1);
+                clock->clockNano+= interval;
+                while(clock->clockNano >= billion){
+                    clock->clockNano-= billion;
+                    clock->clockSec+= 1;
+                };
+                log.open("log.out", ios::app);
+                log << "OSS: Process " << readyQueue[i].pid << " has entered ready queue at time: " << clock->clockSec << "s : " << clock->clockNano << "ns \n";
+                log.close();
                 cout << readyQueue[i].pid << " rqPid: " << i << endl;
             }
             
@@ -258,8 +269,6 @@ int main(int argc, char* argv[]){
             
             
             //Randomly increase time by small amount for doing ready queue
-
-            const int maxSystemTimeSpent = 15;
             interval = rand()%((maxSystemTimeSpent - 1)+1);
             clock->clockNano+= interval;
             while(clock->clockNano >= billion){
@@ -267,20 +276,20 @@ int main(int argc, char* argv[]){
                 clock->clockSec+= 1;
             };
 
-            //Do ready Queue
-            //for(int i = 0; i < 18; i++){
-                //cout << readyQueue[i].pid << " READY QUEUE WITHIN RQ" <<endl;
-                //if(readyQueue[0].pid = -1){
-                    
-                //}
-            //}
-            readyQueue[0].pid = pTable[0].pid;
 
             message.mesg_timeQuant = 50;
-            message.mesg_type = readyQueue[0].pid;
-            log.open("log.out", ios::app);
-            log << "OSS: Process " << pTable[0].pid << " has entered ready queue \n";
-            log.close();
+
+            for(int i = 0; i < 18; i++){
+                if(readyQueue[i].pid != -1){
+                    message.mesg_type = readyQueue[i].pid;
+                    message.mesg_rqIndex = i;
+                    i = 18;
+                }
+            }
+            //message.mesg_type = readyQueue[0].pid;
+            //log.open("log.out", ios::app);
+            //log << "OSS: Process " << readyQueue[0] << " has entered ready queue \n";
+            //log.close();
             
             if(pTable[0].typeOfSystem == true)
                 message.mesg_typeOfSystem = true;

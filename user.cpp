@@ -50,6 +50,7 @@ struct mesg_buffer {
     bool mesg_blocked;
     int mesg_unblockNS;
     int mesg_unblockSec;
+    int mesg_rqIndex;
 }message;
 
 int shmidClock;
