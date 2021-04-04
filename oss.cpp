@@ -68,7 +68,8 @@ int main(int argc, char* argv[]){
     int size = sizeof(pTable) * LEN;
     int processesOpen = 0;
     int totalCreated = 0;
-
+    ofstream log("log.out");
+    log.close();
     srand(time(NULL));
 
     //Command Line Parsing
@@ -198,6 +199,17 @@ int main(int argc, char* argv[]){
                     totalCreated++;
                     //cout << totalCreated << " ; total created" <<endl;
                     if(fork() == 0){
+
+                        //Handles all new process creation
+                        interval = rand()%((maxTimeBetweenNewProcsNS - 1)+1);
+                        clock->clockNano+= interval;
+                        while(clock->clockNano >= billion){
+                            clock->clockNano-= billion;
+                            clock->clockSec+= 1;
+                        };
+                        log.open("log.out",ios::app);
+                        log << "OSS: Generating process with PID " << getpid() << " at time: " << clock->clockNano << " ns : " << clock->clockSec << "s \n";
+                        log.close();
                         //cout << "Enter Fork" <<endl;
                         typeOfSystemNum = rand()%((outofOneHund - 1)+1);
                         pTable[i].pid = getpid();
@@ -226,9 +238,9 @@ int main(int argc, char* argv[]){
             
 
             //cout << "Log to File" << endl;
-            ofstream log("log.out");
-            log << "OSS: Generating process with PID " << pTable[0].pid << " at time: " << clock->clockNano << " ns : " << clock->clockSec << "s \n";
-            log.close();
+            //log.open("log.out",ios::app);
+            //log << "OSS: Generating process with PID " << pTable[0].pid << " at time: " << clock->clockNano << " ns : " << clock->clockSec << "s \n";
+            //log.close();
             sleep(1); //This needs to be fixed, but we can leave it for now.
             pTable[0].processPrio = 1;
 
@@ -241,9 +253,6 @@ int main(int argc, char* argv[]){
                 readyQueue[i].pid = pTable[i].pid;
                 cout << readyQueue[i].pid << " rqPid: " << i << endl;
             }
-
-
-            //cout << pTable[0].pid << " ; oss PID" <<endl;
             
             
             
