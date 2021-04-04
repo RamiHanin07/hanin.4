@@ -55,11 +55,32 @@ struct mesg_buffer{
 
 int shmidClock;
 int shmidProc;
+int msgid;
+int msgidTwo;
+
+void signalHandler(int signal);
+
+void signalHandler(int signal){
+
+    //Basic signal handler
+    if(signal == 2)
+        cout << "Interrupt Signal Received" <<endl;
+    else if(signal == 14)
+        cout << "Exceeded Time, Terminating Program" <<endl;
+    msgctl(msgid, IPC_RMID, NULL);
+    msgctl(msgidTwo, IPC_RMID,NULL);
+    shmctl(shmidClock, IPC_RMID, NULL);
+    shmctl(shmidProc, IPC_RMID, NULL);
+    exit(signal);
+}
 
 
 int main(int argc, char* argv[]){
 
     //Variable
+    signal(SIGINT, signalHandler);
+    signal(SIGALRM, signalHandler);
+    alarm(20);
     struct simClock *clock;
     struct processes *pTable;
     struct processes readyQueue[20];
@@ -150,8 +171,7 @@ int main(int argc, char* argv[]){
     int status = 0;
     char buffer[50] = "";
 
-    int msgid;
-    int msgidTwo;
+    
     key_t messageKey = ftok("poggers", 65);
     key_t messageKeyTwo = ftok("homies",65);
     msgid = msgget(messageKey, 0666|IPC_CREAT);
@@ -171,7 +191,7 @@ int main(int argc, char* argv[]){
 
     int typeOfSystemNum = rand()%((outofOneHund - 1)+1);
 
-        //do{
+        do{
             //cout << "Start Do" <<endl;
             //Checks the blocked queue, if an index in the blocked queue is ready to be unblocked, set it to unblocked.
 
@@ -232,23 +252,25 @@ int main(int argc, char* argv[]){
             pTable[0].processPrio = 1;
 
             for(int i = 0; i < 18; i++){
-                cout << pTable[i].pid << " pTablepid: " << i << endl;
+                //cout << pTable[i].pid << " pTablepid: " << i << endl;
             }
 
 
             //Fills Ready Queue with Processes
             for(int i = 0 ; i < 18; i++){
-                readyQueue[i].pid = pTable[i].pid;
-                interval = rand()%((maxSystemTimeSpent - 1)+1);
-                clock->clockNano+= interval;
-                while(clock->clockNano >= billion){
-                    clock->clockNano-= billion;
-                    clock->clockSec+= 1;
-                };
-                log.open("log.out", ios::app);
-                log << "OSS: Process " << readyQueue[i].pid << " has entered ready queue at time: " << clock->clockSec << "s : " << clock->clockNano << "ns \n";
-                log.close();
-                cout << readyQueue[i].pid << " rqPid: " << i << endl;
+                if(readyQueue[i].pid == -1){
+                    readyQueue[i].pid = pTable[i].pid;
+                    interval = rand()%((maxSystemTimeSpent - 1)+1);
+                    clock->clockNano+= interval;
+                    while(clock->clockNano >= billion){
+                        clock->clockNano-= billion;
+                        clock->clockSec+= 1;
+                    };
+                    log.open("log.out", ios::app);
+                    log << "OSS: Process " << readyQueue[i].pid << " has entered ready queue at time: " << clock->clockSec << "s : " << clock->clockNano << "ns \n";
+                    log.close();
+                    //cout << readyQueue[i].pid << " rqPid: " << i << endl;
+                }
             }
             
             
@@ -344,6 +366,9 @@ int main(int argc, char* argv[]){
                         //Remove process from process queue
                         for(int i = 0 ; i < 18; i++){
                             if(pTable[i].pid == message.mesg_pid){
+                                log.open("log.out",ios::app);
+                                log << "OSS: Process " << pTable[i].pid << " has been removed from system at time: " << clock->clockSec << "s : " <<clock->clockNano << "ns" <<endl;
+                                log.close();
                                 pTable[i].pid = -1;
                                 i = 18;
                             }
@@ -386,7 +411,7 @@ int main(int argc, char* argv[]){
                         }
                     }
                 }
-                
+
                 //The first index in the blocked queue that is unblocked will be moved to the first available ready queue position.
                 for(int i = 0; i < 18; i++){
                     if(blockedQueue[i].unblocked == true){
@@ -413,7 +438,7 @@ int main(int argc, char* argv[]){
                 readyQueueOpen = 0;
 
 
-        //}while(processesOpen != 18);
+        }while(processesOpen != 18);
 
         //cout << clock->clockNano << "time passed" <<endl;
         //cout << clock->clockSec << " time passed sec" <<endl;
