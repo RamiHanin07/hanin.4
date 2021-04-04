@@ -191,17 +191,17 @@ int main(int argc, char* argv[]){
             //Generate a new process if processTable isn't empty
 
             for(int i = 0; i < 18; i++){
-                cout << "Enter For" << endl;
-                cout << pTable[i].pid << " pTablepid" << endl;
+                //cout << "Enter For" << endl;
+                //cout << pTable[i].pid << " pTablepid" << endl;
                 if(pTable[i].pid == -1 && totalCreated != 100){
-                    cout << "Enter if Pid" << endl;
+                    //cout << "Enter if Pid" << endl;
                     totalCreated++;
-                    cout << totalCreated << " ; total created" <<endl;
+                    //cout << totalCreated << " ; total created" <<endl;
                     if(fork() == 0){
-                        cout << "Enter Fork" <<endl;
+                        //cout << "Enter Fork" <<endl;
                         typeOfSystemNum = rand()%((outofOneHund - 1)+1);
                         pTable[i].pid = getpid();
-                        cout << endl;
+                        //cout << endl;
                         //cout << pTable[i].pid << " child pTable Pid" <<endl;
                         if(typeOfSystemNum >=51){
                             pTable[i].typeOfSystem = true;
@@ -214,7 +214,7 @@ int main(int argc, char* argv[]){
                         for(int j = 0 ; j < 18; j++){
                             if(readyQueue[j].pid == -1){
                                 readyQueue[j].pid = pTable[i].pid;
-                                cout << readyQueue[j].pid << " RQ PID WITHN FOR" << endl;
+                                //cout << readyQueue[j].pid << " RQ PID WITHN FOR" << endl;
                                 j = 18;
                             }
                         }
@@ -235,8 +235,14 @@ int main(int argc, char* argv[]){
             for(int i = 0; i < 18; i++){
                 cout << pTable[i].pid << " pTablepid: " << i << endl;
             }
-                
-                
+
+            for(int i = 0 ; i < 18; i++){
+                //cout << readyQueue[i].pid << " rqPid: " << i << endl;
+                readyQueue[i].pid = pTable[i].pid;
+                cout << readyQueue[i].pid << " rqPid: " << i << endl;
+            }
+
+
             //cout << pTable[0].pid << " ; oss PID" <<endl;
             
             

@@ -113,7 +113,7 @@ int main(int argc, char* argv[]){
 
     message.mesg_type = getpid();
 
-    cout << getpid() << " user pid" <<endl;
+    //cout << getpid() << " user pid" <<endl;
 
     
     ofstream log("log.out", ios::app);
