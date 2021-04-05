@@ -25,6 +25,8 @@ struct simClock{
 
 struct processes{
     int pid;
+    int timeStartedSec;
+    int timeStartedNS;
     int totalCPUTime;
     int totalTimeSystem;
     int lastBurst;
@@ -33,6 +35,8 @@ struct processes{
     int blockRestartSec;
     int blockRestartNS;
     bool unblocked;
+    int timeInReadySec;
+    int timeInReadyNS;
 };
 
 struct mesg_buffer {
@@ -64,7 +68,11 @@ int main(int argc, char* argv[]){
     struct processes *pTable;
     int LEN = 18;
     int size = sizeof(pTable) * LEN;
+    bool blocked = false;
     srand(getpid());
+
+    message.mesg_blocked = false;
+    message.mesg_terminated = false;
     
 
     //Shared Memory Creation for System Clock (Seconds)
@@ -112,70 +120,94 @@ int main(int argc, char* argv[]){
     msgid = msgget(messageKey, 0666|IPC_CREAT);
     msgidTwo = msgget(messageKeyTwo, 0666|IPC_CREAT);
 
-    message.mesg_type = getpid();
-
-    //cout << getpid() << " user pid" <<endl;
-
-    
-    ofstream log("log.out", ios::app);
-
-    msgrcv(msgidTwo, &message, sizeof(message), message.mesg_type, 0);
 
 
-    //Random states for the user process
-    const int chanceToTerminate = 10;
-    const int outOfOneHund = 100;
-    int didItTerminate = rand()%((outOfOneHund - 1)+1);
-    int timeUsed = rand()%((message.mesg_timeQuant - 1)+1);
-
-    int chanceToBlock;
-    int didItBlock;
-    const int blockRestartSecMax = 5;
-    const int blockRestartNSMax = 1000;
-    int blockRestartSec = rand()%((blockRestartSecMax - 1)+1);
-    int blockRestartNS = rand()%((blockRestartNSMax - 1)+1);
-    
-
-
-
-    message.mesg_timeUsed = timeUsed;
-    message.mesg_pid = getpid();
-
-    if(message.mesg_typeOfSystem == true) // True == CPU bound , false == io/bound. CPU Bound lower chance to block, IO bound higher chance to block
-        chanceToBlock = 10;
-    else
-        chanceToBlock = 60;
-
-    didItBlock = rand()%((outOfOneHund - 1)+1);
-
-
-    if(didItTerminate <= chanceToTerminate){
-        cout << "Process Terminated" <<endl;
-        log << "User: Process " << getpid() << " has terminated unexpectedly \n";
-        message.mesg_terminated = true;
+        blocked = false;
         
-    }
-    else{
-        if(didItBlock <= chanceToBlock){
-            cout << "Process Blocked" <<endl;
-            log << "User: Process " << getpid() << " has been blocked \n";
-            message.mesg_blocked = true;
-            message.mesg_unblockNS = blockRestartNS;
-            message.mesg_unblockSec = blockRestartSec;
+
+        //cout << getpid() << " user pid" <<endl;
+        message.mesg_type = getpid();
+        
+        ofstream log("log.dat", ios::app);
+
+        //cout << "user msgrcv before" << endl;
+        msgrcv(msgidTwo, &message, sizeof(message), message.mesg_type, 0);
+        //cout << "user msgrcv after" << endl;
+        //cout << getpid() << " user pid" << endl;
+        
+
+
+        //Random states for the user process
+        const int chanceToTerminate = 5;
+        const int outOfOneHund = 100;
+        int didItTerminate = rand()%((outOfOneHund - 1)+1);
+        int timeUsed = rand()%((message.mesg_timeQuant - 1)+1);
+
+        int chanceToBlock;
+        int didItBlock;
+        const int blockRestartSecMax = 5;
+        const int blockRestartNSMax = 1000;
+        int blockRestartSec = rand()%((blockRestartSecMax - 1)+1);
+        int blockRestartNS = rand()%((blockRestartNSMax - 1)+1);
+        
+
+
+
+        message.mesg_timeUsed = timeUsed;
+        message.mesg_pid = getpid();
+
+        if(message.mesg_typeOfSystem == true) // True == CPU bound , false == io/bound. CPU Bound lower chance to block, IO bound higher chance to block
+            chanceToBlock = 10;
+        else
+            chanceToBlock = 60;
+
+        didItBlock = rand()%((outOfOneHund - 1)+1);
+
+
+        if(didItTerminate <= chanceToTerminate){
+            cout << "Process Terminated" <<endl;
+            log << "User: Process " << getpid() << " has terminated unexpectedly \n";
+            message.mesg_terminated = true;
+            message.mesg_blocked = false;
+            
         }
         else{
+            if(didItBlock <= chanceToBlock){
+                cout << "Process Blocked" <<endl;
+                log << "User: Process " << getpid() << " has been blocked \n";
+                message.mesg_blocked = true;
+                blocked = true;
+                message.mesg_unblockNS = blockRestartNS;
+                message.mesg_unblockSec = blockRestartSec;
+            }
+            else{
+                log << "User: Process " << getpid() << " has started working \n";
+                cout << "Process Working" << endl;
+                message.mesg_processPrio = pTable[0].processPrio;
+                strcpy(message.mesg_text, "Data Receieved");
+                log << "User: Process " << getpid() << " has stopped working \n";
+                message.mesg_terminated = false;
+                message.mesg_blocked = false;
+            }
+        }
+        //cout << message.mesg_processPrio << " ; user prio" <<endl;
+        //cout << message.mesg_pid << " ; user pid" << endl;
+        
+        message.mesg_type = 2;
+        msgsnd(msgid, &message, sizeof(message), 0);
+
+        if(blocked == true){
+            cout << "Blocked" << endl;
+            msgrcv(msgidTwo, &message, sizeof(message), message.mesg_type, 0);
+            log << "User: Process " << getpid() << " has been unblocked \n";
             log << "User: Process " << getpid() << " has started working \n";
             cout << "Time Quant: " << message.mesg_timeQuant << endl;
             message.mesg_processPrio = pTable[0].processPrio;
             strcpy(message.mesg_text, "Data Receieved");
             log << "User: Process " << getpid() << " has stopped working \n";
-        }
-    }
-    cout << message.mesg_processPrio << " ; user prio" <<endl;
-    cout << message.mesg_pid << " ; user pid" << endl;
-    message.mesg_type = 2;
-    msgsnd(msgid, &message, sizeof(message), 0);
+            msgsnd(msgid, &message, sizeof(message), 0);
 
+        }
 
     
     //shmdt((void *) pTable);

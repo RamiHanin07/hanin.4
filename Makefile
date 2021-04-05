@@ -1,6 +1,10 @@
 CC=g++
 CFLAGS= -o 
 
+
+.cpp.o:
+	$(CC) $(CFLAGS) 
+	
 main: oss.cpp user
 	$(CC) $(CFLAGS) oss oss.cpp
 
